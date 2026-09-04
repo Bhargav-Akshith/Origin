@@ -13,7 +13,7 @@ export function MetricsBar({ metrics, lang }: Props) {
   const compliant = metrics?.compliant_count ?? 0;
   const nonCompliant = metrics?.non_compliant_count ?? 0;
   const rate = metrics?.compliance_rate ?? 0;
-  const critical = metrics?.critical_violations_count ?? 0;
+  const critical = metrics?.critical_breaches_count ?? 0;
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 my-4">

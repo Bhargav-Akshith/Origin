@@ -1,12 +1,24 @@
-import { ShieldCheck, Clock, Globe, UserCheck } from 'lucide-react';
+import { ShieldCheck, Clock, Globe, UserCheck, LayoutDashboard, ScanLine, KeyRound } from 'lucide-react';
+import type { User } from '../types';
 import { type Language, translations } from '../i18n/translations';
 
 interface Props {
+  activePortal: 'admin' | 'user';
+  onPortalChange: (portal: 'admin' | 'user') => void;
+  currentUser: User | null;
+  onRoleSwitch: (role: string) => void;
   lang: Language;
   onLanguageChange: (lang: Language) => void;
 }
 
-export function GovHeader({ lang, onLanguageChange }: Props) {
+export function GovHeader({
+  activePortal,
+  onPortalChange,
+  currentUser,
+  onRoleSwitch,
+  lang,
+  onLanguageChange
+}: Props) {
   const t = translations[lang];
   
   const currentDate = new Date().toLocaleDateString(lang === 'hi' ? 'hi-IN' : 'en-IN', {
@@ -27,8 +39,24 @@ export function GovHeader({ lang, onLanguageChange }: Props) {
             <span className="text-amber-400 font-semibold">{t.deptLegalMetrology}</span>
           </div>
           
-          <div className="flex items-center space-x-4">
-            {/* Interactive Language Selector */}
+          <div className="flex items-center space-x-3">
+            {/* Quick Demo Role Switcher for Judges */}
+            <div className="flex items-center space-x-1.5 bg-slate-800 px-2 py-0.5 rounded border border-slate-700 text-[10px]">
+              <KeyRound className="w-3 h-3 text-amber-400" />
+              <span className="text-slate-400 font-semibold">Demo Role:</span>
+              <select
+                value={currentUser?.role || 'admin'}
+                onChange={(e) => onRoleSwitch(e.target.value)}
+                className="bg-slate-900 text-amber-300 font-bold px-1.5 py-0.5 rounded border border-slate-600 outline-none text-[10px] cursor-pointer"
+              >
+                <option value="admin">Chief Admin (Full Control)</option>
+                <option value="inspector">Field Inspector</option>
+                <option value="reviewer">Senior Reviewer</option>
+                <option value="operator">Terminal Operator</option>
+              </select>
+            </div>
+
+            {/* Language Selector */}
             <div className="flex items-center space-x-1 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">
               <Globe className="w-3.5 h-3.5 text-amber-400 mr-1" />
               <button
@@ -40,7 +68,7 @@ export function GovHeader({ lang, onLanguageChange }: Props) {
                     : 'text-slate-300 hover:text-white'
                 }`}
               >
-                English
+                EN
               </button>
               <span className="text-slate-600">/</span>
               <button
@@ -55,9 +83,6 @@ export function GovHeader({ lang, onLanguageChange }: Props) {
                 हिन्दी
               </button>
             </div>
-            
-            <span className="text-slate-600 hidden sm:inline">|</span>
-            <span className="hidden sm:inline">{t.stdCompliancePortal}</span>
           </div>
         </div>
       </div>
@@ -84,27 +109,62 @@ export function GovHeader({ lang, onLanguageChange }: Props) {
             </div>
           </div>
 
-          {/* Officer Session & Portal Status */}
+          {/* Active Officer Status */}
           <div className="flex items-center space-x-3 text-xs">
             <div className="hidden lg:flex items-center space-x-2 text-slate-300 bg-slate-800/90 px-3 py-1.5 rounded-md border border-slate-700">
               <Clock className="w-3.5 h-3.5 text-amber-400" />
               <span>{t.inspectionDate}: <b>{currentDate}</b></span>
             </div>
 
-            <div className="flex items-center space-x-2 bg-emerald-950/90 text-emerald-300 px-3 py-1.5 rounded-md border border-emerald-700/60">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span className="font-semibold tracking-wide text-[11px]">{t.portalActive}</span>
-            </div>
-
-            <div className="hidden sm:flex items-center space-x-2 bg-slate-800/90 text-slate-200 px-3 py-1.5 rounded-md border border-slate-700">
-              <UserCheck className="w-3.5 h-3.5 text-blue-400" />
+            <div className="flex items-center space-x-2 bg-slate-800/90 text-slate-200 px-3 py-1.5 rounded-md border border-slate-700">
+              <UserCheck className="w-3.5 h-3.5 text-amber-400" />
               <div className="text-left">
-                <p className="font-bold text-[11px] leading-tight">{t.inspectorId}</p>
-                <p className="text-[9px] text-slate-400">{t.enforcementWing}</p>
+                <p className="font-bold text-[11px] leading-tight text-white">{currentUser?.name || 'Authorized Officer'}</p>
+                <p className="text-[9px] text-amber-300 font-semibold uppercase">{currentUser?.role || 'inspector'} • {currentUser?.badge_number || 'GOV-8821'}</p>
               </div>
             </div>
           </div>
+        </div>
+      </div>
 
+      {/* Dual Portal Switcher Tabs Bar */}
+      <div className="bg-[#0b2136] border-t border-slate-800/80 px-4">
+        <div className="gov-container flex items-center justify-between">
+          <nav className="flex space-x-1 py-1">
+            <button
+              onClick={() => onPortalChange('user')}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-t-lg text-xs font-bold transition-all ${
+                activePortal === 'user'
+                  ? 'bg-white text-slate-900 shadow-sm border-t-2 border-amber-500'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+              }`}
+            >
+              <ScanLine className="w-4 h-4 text-blue-700" />
+              <span>{t.inspectorPortalTab} (Screening & OCR)</span>
+            </button>
+
+            {currentUser?.role === 'admin' && (
+              <button
+                onClick={() => onPortalChange('admin')}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-t-lg text-xs font-bold transition-all ${
+                  activePortal === 'admin'
+                    ? 'bg-white text-slate-900 shadow-sm border-t-2 border-amber-500'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                }`}
+              >
+                <LayoutDashboard className="w-4 h-4 text-indigo-600" />
+                <span>{t.adminPortalTab} (Executive Command)</span>
+                <span className="text-[9px] bg-amber-400 text-slate-950 px-1.5 py-0.2 rounded font-black">
+                  ADMIN
+                </span>
+              </button>
+            )}
+          </nav>
+
+          <div className="hidden sm:flex items-center text-[11px] text-slate-400 space-x-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>NLMES Secure Node Active</span>
+          </div>
         </div>
       </div>
     </header>

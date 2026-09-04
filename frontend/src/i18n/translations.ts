@@ -110,9 +110,39 @@ export const translations = {
     cameraErrorDesc: 'Unable to access hardware camera or permission was not granted. You can still upload packaging photos directly.',
     cameraSelectFileFallback: 'Upload Photo Instead',
 
+    // Admin Control Center
+    adminPortalTab: 'Admin Control Center',
+    inspectorPortalTab: 'Inspector Portal',
+    adminBadge: 'CENTRAL CONTROLLER CLEARANCE',
+    navDashboard: 'Executive Dashboard',
+    navUsers: 'User & Role Access',
+    navRules: 'Rules Engine Manager',
+    navSubmissions: 'Case Review & Submissions',
+    navAiDiagnostics: 'AI & Vision Diagnostics',
+    navAnalytics: 'Compliance Analytics',
+    navAuditLogs: 'Security Audit Trail',
+    navSettings: 'System Settings',
+    navAlerts: 'Alerts & Notices',
+
+    // Admin Common Actions
+    saveChanges: 'Save Changes',
+    cancelAction: 'Cancel',
+    searchPlaceholder: 'Search records...',
+    filterAll: 'All Categories / Statuses',
+    roleAdmin: 'Administrator',
+    roleInspector: 'Inspector',
+    roleReviewer: 'Senior Reviewer',
+    roleOperator: 'Terminal Operator',
+    statusActive: 'ACTIVE',
+    statusBlocked: 'SUSPENDED',
+    statusNew: 'NEW',
+    statusUnderReview: 'UNDER REVIEW',
+    statusCompleted: 'APPROVED / CLEAR',
+    statusNoticeIssued: 'SECTION 39 NOTICE',
+
     // Footer
     footerLeft: 'SIH Origin • Team IRIS | Smart India Hackathon 2026 | PS #26034',
-    footerRight: 'Automated Legal Metrology (Packaged Commodities) Compliance System • Version 1.0'
+    footerRight: 'Automated Legal Metrology (Packaged Commodities) Compliance System • Version 2.0 (Dual Portal)'
   },
   hi: {
     // Top Bar
@@ -223,8 +253,38 @@ export const translations = {
     cameraErrorDesc: 'हार्डवेयर कैमरा या अनुमति उपलब्ध नहीं है। आप सीधे पैकेजिंग फ़ोटो अपलोड कर सकते हैं।',
     cameraSelectFileFallback: 'फ़ोटो अपलोड करें',
 
+    // Admin Control Center
+    adminPortalTab: 'एडमिन कंट्रोल सेंटर',
+    inspectorPortalTab: 'निरीक्षक पोर्टल',
+    adminBadge: 'केंद्रीय नियंत्रक अनुमति',
+    navDashboard: 'कार्यकारी डैशबोर्ड',
+    navUsers: 'उपयोगकर्ता एवं भूमिका पहुंच',
+    navRules: 'नियम इंजन प्रबंधक',
+    navSubmissions: 'केस समीक्षा एवं सबमिशन',
+    navAiDiagnostics: 'एआई एवं विज़न डायग्नोस्टिक्स',
+    navAnalytics: 'अनुपालन विश्लेषण',
+    navAuditLogs: 'सुरक्षा ऑडिट ट्रेल',
+    navSettings: 'सिस्टम सेटिंग्स',
+    navAlerts: 'अलर्ट एवं नोटिस',
+
+    // Admin Common Actions
+    saveChanges: 'परिवर्तन सहेजें',
+    cancelAction: 'रद्द करें',
+    searchPlaceholder: 'रिकॉर्ड खोजें...',
+    filterAll: 'सभी श्रेणियां / स्थितियां',
+    roleAdmin: 'व्यवस्थापक (Admin)',
+    roleInspector: 'विधिक निरीक्षक',
+    roleReviewer: 'वरिष्ठ समीक्षक',
+    roleOperator: 'टर्मिनल ऑपरेटर',
+    statusActive: 'सक्रिय',
+    statusBlocked: 'निलंबित',
+    statusNew: 'नया',
+    statusUnderReview: 'समीक्षाधीन',
+    statusCompleted: 'स्वीकृत / अनुपालन',
+    statusNoticeIssued: 'धारा 39 नोटिस जारी',
+
     // Footer
     footerLeft: 'SIH ओरिजिन • टीम IRIS | स्मार्ट इंडिया हैकाथॉन 2026 | समस्या आईडी #26034',
-    footerRight: 'स्वचालित विधिक मापविज्ञान (पैकेज्ड कमोडिटीज) अनुपालन प्रणाली • संस्करण 1.0'
+    footerRight: 'स्वचालित विधिक मापविज्ञान (पैकेज्ड कमोडिटीज) अनुपालन प्रणाली • संस्करण 2.0 (दोहरी पोर्टल)'
   }
 };
