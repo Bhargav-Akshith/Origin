@@ -1,0 +1,82 @@
+[
+  {
+    "text": "Generic Commodity Name: Instant Soluble Coffee Powder",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 25,
+      "w": 42,
+      "h": 6
+    }
+  },
+  {
+    "text": "Net Quantity / Standard Unit: Net Wt: 200 g",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 31,
+      "w": 25,
+      "h": 6
+    }
+  },
+  {
+    "text": "MRP Declared: MRP Rs. 500.00 (incl. of all taxes) | USP Rs. 5.50 / g [MISMATCHED USP: Expected 2.50]",
+    "confidence": 0.45,
+    "bbox": {
+      "x": 5,
+      "y": 37,
+      "w": 92,
+      "h": 6
+    }
+  },
+  {
+    "text": "Month & Year of Manufacture: Mfg: 02/2026",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 44,
+      "w": 28,
+      "h": 6
+    }
+  },
+  {
+    "text": "Best Before / Expiry Period: Best Before 18 Months",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 50,
+      "w": 35,
+      "h": 6
+    }
+  },
+  {
+    "text": "Country of Origin: Made in India",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 56,
+      "w": 32,
+      "h": 6
+    }
+  },
+  {
+    "text": "Manufacturer & Packer Address: Mfg by CafeAroma Plantation Ltd, Coorg, Karnataka 571201",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 62,
+      "w": 88,
+      "h": 6
+    }
+  },
+  {
+    "text": "Consumer Care Redressal Details: support@cafearoma.com | Helpline: 1800-456-7890",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 68,
+      "w": 85,
+      "h": 6
+    }
+  }
+]

@@ -1,0 +1,82 @@
+[
+  {
+    "text": "Generic Commodity Name: Wet Baby Cleansing Wipes",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 25,
+      "w": 40,
+      "h": 6
+    }
+  },
+  {
+    "text": "Net Quantity / Standard Unit: Net Qty: 80 units (Sheets)",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 31,
+      "w": 42,
+      "h": 6
+    }
+  },
+  {
+    "text": "MRP (incl. of all taxes) & USP: MRP Rs. 160.00 (incl. of all taxes) | USP Rs. 2.00 / Unit",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 37,
+      "w": 88,
+      "h": 6
+    }
+  },
+  {
+    "text": "Month & Year of Manufacture: Mfg: 01/2026",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 44,
+      "w": 28,
+      "h": 6
+    }
+  },
+  {
+    "text": "Best Before / Expiry Period: Best Before 24 Months from date of mfg",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 50,
+      "w": 48,
+      "h": 6
+    }
+  },
+  {
+    "text": "Country of Origin: Made in India",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 56,
+      "w": 32,
+      "h": 6
+    }
+  },
+  {
+    "text": "Manufacturer & Packer Address: Mfg by LittleAngels Hygiene Products Pvt Ltd, Pune, Maharashtra 411014",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 62,
+      "w": 92,
+      "h": 6
+    }
+  },
+  {
+    "text": "Consumer Care Redressal Details: help@littleangels.in | Toll Free: 1800-112-9988",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 68,
+      "w": 85,
+      "h": 6
+    }
+  }
+]

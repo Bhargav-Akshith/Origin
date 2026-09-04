@@ -1,0 +1,82 @@
+[
+  {
+    "text": "Generic Commodity Name: Sweet Almond Hair and Body Oil",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 25,
+      "w": 46,
+      "h": 6
+    }
+  },
+  {
+    "text": "Net Quantity / Standard Unit: [MANDATORY NET QUANTITY DECLARATION MISSING]",
+    "confidence": 0.45,
+    "bbox": {
+      "x": 5,
+      "y": 31,
+      "w": 75,
+      "h": 6
+    }
+  },
+  {
+    "text": "MRP (incl. of all taxes) & USP: MRP Rs. 399.00 (incl. of all taxes) | USP Rs. 1.99 / ml",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 37,
+      "w": 88,
+      "h": 6
+    }
+  },
+  {
+    "text": "Month & Year of Manufacture: Mfg: 01/2026",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 44,
+      "w": 28,
+      "h": 6
+    }
+  },
+  {
+    "text": "Best Before / Expiry Period: Best Before 36 Months from manufacturing date",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 50,
+      "w": 52,
+      "h": 6
+    }
+  },
+  {
+    "text": "Country of Origin: Country of Origin: India",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 56,
+      "w": 36,
+      "h": 6
+    }
+  },
+  {
+    "text": "Manufacturer & Packer Address: Mfg by Veda Organics Ayurveda Ltd, Haridwar, Uttarakhand 249401",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 62,
+      "w": 90,
+      "h": 6
+    }
+  },
+  {
+    "text": "Consumer Care Redressal Details: care@vedanaturals.in | Contact: +91-11-2345-6789",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 68,
+      "w": 85,
+      "h": 6
+    }
+  }
+]

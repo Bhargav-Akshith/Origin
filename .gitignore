@@ -1,0 +1,41 @@
+# Node dependencies and build
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Python & environments
+__pycache__/
+*/__pycache__/
+*.py[cod]
+*$py.class
+*.env
+.venv/
+venv/
+ENV/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+backend/legal_metrology.db
+
+# OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary runtime uploads (keep demo assets & sample tests)
+backend/uploads/*.jpg
+backend/uploads/*.png
+backend/uploads/*.jpeg
+backend/uploads/*.webp
+backend/reports/*.pdf
+!backend/demo_assets/*
+!test_sample_images/*

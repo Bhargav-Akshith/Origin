@@ -1,0 +1,82 @@
+[
+  {
+    "text": "Generic Commodity Name: Whey Protein Dietary Food Supplement",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 25,
+      "w": 48,
+      "h": 6
+    }
+  },
+  {
+    "text": "Net Quantity / Standard Unit: Net Wt: 1 kg",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 31,
+      "w": 30,
+      "h": 6
+    }
+  },
+  {
+    "text": "MRP Declared: Rs. 2999 [Missing 'incl. of all taxes' & Missing Unit Sale Price]",
+    "confidence": 0.45,
+    "bbox": {
+      "x": 5,
+      "y": 37,
+      "w": 90,
+      "h": 6
+    }
+  },
+  {
+    "text": "Month & Year of Manufacture: Mfg: 02/2026",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 44,
+      "w": 28,
+      "h": 6
+    }
+  },
+  {
+    "text": "Best Before / Expiry Period: Use before 24 Months from manufacturing",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 50,
+      "w": 48,
+      "h": 6
+    }
+  },
+  {
+    "text": "Country of Origin: Made in India",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 56,
+      "w": 32,
+      "h": 6
+    }
+  },
+  {
+    "text": "Manufacturer & Packer Address: Mfg by ProMax Nutrition Labs Pvt Ltd, MIDC Industrial Area, Mumbai 400072",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 62,
+      "w": 90,
+      "h": 6
+    }
+  },
+  {
+    "text": "Consumer Care Redressal Details: support@promaxlabs.com | Helpline: 1800-888-4422",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 68,
+      "w": 85,
+      "h": 6
+    }
+  }
+]

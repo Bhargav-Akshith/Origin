@@ -1,0 +1,82 @@
+[
+  {
+    "text": "Generic Commodity Name: Organic Green Tea Bags",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 25,
+      "w": 38,
+      "h": 6
+    }
+  },
+  {
+    "text": "Net Quantity / Standard Unit: Net Wt: 100 g (50 Tea Bags)",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 31,
+      "w": 42,
+      "h": 6
+    }
+  },
+  {
+    "text": "MRP (incl. of all taxes) & USP: MRP Rs. 240.00 (incl. of all taxes) | USP Rs. 2.40 / g",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 37,
+      "w": 88,
+      "h": 6
+    }
+  },
+  {
+    "text": "Month & Year of Manufacture: Mfg: 03/2026",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 44,
+      "w": 28,
+      "h": 6
+    }
+  },
+  {
+    "text": "Best Before / Expiry Period: Best Before 18 Months from date of packaging",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 50,
+      "w": 52,
+      "h": 6
+    }
+  },
+  {
+    "text": "Country of Origin: Made in India",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 56,
+      "w": 32,
+      "h": 6
+    }
+  },
+  {
+    "text": "Manufacturer & Packer Address: Mfg by Himalayan Plantation Teas Ltd., Tea Estate, Palampur, HP 176061",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 62,
+      "w": 90,
+      "h": 6
+    }
+  },
+  {
+    "text": "Consumer Care Redressal Details: care@himalayanteas.in | National Toll Free: 1800-111-2233",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 68,
+      "w": 88,
+      "h": 6
+    }
+  }
+]

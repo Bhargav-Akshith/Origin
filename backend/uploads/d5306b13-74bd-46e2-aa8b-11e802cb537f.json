@@ -1,0 +1,82 @@
+[
+  {
+    "text": "Generic Commodity Name: Aged Long Grain Basmati Rice",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 25,
+      "w": 45,
+      "h": 6
+    }
+  },
+  {
+    "text": "Net Quantity / Standard Unit: Net Wt: 5.0 kg",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 31,
+      "w": 28,
+      "h": 6
+    }
+  },
+  {
+    "text": "MRP (incl. of all taxes) & USP: MRP Rs. 650.00 (incl. of all taxes) | USP Rs. 130.00 / kg",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 37,
+      "w": 88,
+      "h": 6
+    }
+  },
+  {
+    "text": "Month & Year of Manufacture: Pkg: 01/2026",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 44,
+      "w": 28,
+      "h": 6
+    }
+  },
+  {
+    "text": "Best Before / Expiry Period: Best Before 24 Months from packaging date",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 50,
+      "w": 52,
+      "h": 6
+    }
+  },
+  {
+    "text": "Country of Origin: Country of Origin: India",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 56,
+      "w": 36,
+      "h": 6
+    }
+  },
+  {
+    "text": "Manufacturer & Packer Address: Packed by Kohinoor Agri Foods Pvt Ltd, GT Road, Karnal, Haryana 132001",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 62,
+      "w": 90,
+      "h": 6
+    }
+  },
+  {
+    "text": "Consumer Care Redressal Details: customercare@kohinoorrice.com | Toll Free: 1800-200-5544",
+    "confidence": 0.98,
+    "bbox": {
+      "x": 5,
+      "y": 68,
+      "w": 88,
+      "h": 6
+    }
+  }
+]
