@@ -322,5 +322,46 @@ export const uploadPackagingImage = async (
   return res.json();
 };
 
-export const getReportPdfUrl = (scanId: string) => `${API_BASE}/scans/${scanId}/pdf`;
+export const getReportPdfUrl = (scanId: string) => `${API_BASE}/inspections/${scanId}/report`;
 
+export const reinspectScanApi = async (scanId: string): Promise<ScanSession> => {
+  const res = await fetch(`${API_BASE}/inspections/${scanId}/reinspect`, {
+    method: 'POST',
+    headers: getHeaders()
+  });
+  if (!res.ok) throw new Error(await getErrorMessage(res, 'Failed to request reinspection'));
+  return res.json();
+};
+
+export const reviewScanApi = async (
+  scanId: string,
+  workflow_status: string,
+  reviewer_notes?: string,
+  overall_verdict?: string
+): Promise<ScanSession> => {
+  const res = await fetch(`${API_BASE}/inspections/${scanId}/review`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ workflow_status, reviewer_notes, overall_verdict })
+  });
+  if (!res.ok) throw new Error(await getErrorMessage(res, 'Failed to submit review'));
+  return res.json();
+};
+
+export const addImagesToScanApi = async (
+  scanId: string,
+  files: File[] | File
+): Promise<ScanSession> => {
+  const formData = new FormData();
+  const fileArray = Array.isArray(files) ? files : [files];
+  for (const f of fileArray) {
+    formData.append('files', f);
+  }
+  const res = await fetch(`${API_BASE}/inspections/${scanId}/images`, {
+    method: 'POST',
+    headers: currentToken ? { Authorization: `Bearer ${currentToken}` } : undefined,
+    body: formData
+  });
+  if (!res.ok) throw new Error(await getErrorMessage(res, 'Failed to attach photos'));
+  return res.json();
+};

@@ -1052,6 +1052,8 @@ async def upload_and_process_package(
     return schemas.ScanSessionResponse.model_validate(scan_session)
 
 @app.get("/api/v1/scans/{scan_id}/pdf")
+@app.get("/api/v1/inspections/{scan_id}/report")
+@app.get("/api/v1/inspections/{scan_id}/pdf")
 def download_scan_pdf(scan_id: str, db: Session = Depends(get_db)):
     filepath = ensure_report_pdf(scan_id, db)
     return FileResponse(
@@ -1060,3 +1062,207 @@ def download_scan_pdf(scan_id: str, db: Session = Depends(get_db)):
         filename=os.path.basename(filepath)
     )
 
+# ---------------------------------------------------------------------------
+# UNIFIED INSPECTION API SURFACE (Supports Web Mode, Mobile Mode & Native Clients)
+# ---------------------------------------------------------------------------
+
+@app.get("/api/v1/inspections", response_model=List[schemas.ScanSessionResponse])
+def list_inspections(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_inspector),
+    limit: int = 50
+):
+    return list_scans(db=db, current_user=current_user, limit=limit)
+
+@app.post("/api/v1/inspections", response_model=schemas.ScanSessionResponse)
+async def create_inspection(
+    files: Optional[List[UploadFile]] = File(None),
+    file: Optional[UploadFile] = File(None),
+    product_name: str = Form("Packaged Commodity"),
+    category: str = Form("Packaged Food, Edible Oils & Confectionery"),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    return await upload_and_process_package(
+        files=files,
+        file=file,
+        product_name=product_name,
+        category=category,
+        db=db,
+        current_user=current_user
+    )
+
+@app.get("/api/v1/inspections/{scan_id}", response_model=schemas.ScanSessionResponse)
+def get_inspection_details(scan_id: str, db: Session = Depends(get_db)):
+    return get_scan_details(scan_id=scan_id, db=db)
+
+@app.get("/api/v1/inspections/{scan_id}/status")
+def get_inspection_status(scan_id: str, db: Session = Depends(get_db)):
+    scan = db.query(models.ScanSession).filter(models.ScanSession.id == scan_id).first()
+    if not scan:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    return {
+        "id": scan.id,
+        "status": scan.status,
+        "workflow_status": scan.workflow_status,
+        "overall_verdict": scan.overall_verdict,
+        "compliance_score": scan.compliance_score,
+        "confidence_score": scan.confidence_score,
+        "total_fields": len(scan.extracted_fields),
+        "total_violations": len(scan.violations),
+        "sha256_hash": scan.sha256_hash,
+        "created_at": scan.created_at.isoformat() if scan.created_at else None
+    }
+
+@app.get("/api/v1/inspections/{scan_id}/evidence")
+def get_inspection_evidence(scan_id: str, db: Session = Depends(get_db)):
+    scan = db.query(models.ScanSession).filter(models.ScanSession.id == scan_id).first()
+    if not scan:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    return {
+        "id": scan.id,
+        "product_name": scan.product_name,
+        "image_url": scan.image_url,
+        "packaging_images": scan.packaging_images or [],
+        "extracted_fields": [
+            {
+                "id": ef.id,
+                "field_type": ef.field_type,
+                "field_label": ef.field_label,
+                "raw_text": ef.raw_text,
+                "normalized_value": ef.normalized_value,
+                "bbox": ef.bbox,
+                "image_index": ef.image_index,
+                "confidence": ef.confidence,
+                "is_valid": ef.is_valid,
+                "validation_message": ef.validation_message
+            }
+            for ef in scan.extracted_fields
+        ]
+    }
+
+@app.get("/api/v1/inspections/{scan_id}/decision")
+def get_inspection_decision(scan_id: str, db: Session = Depends(get_db)):
+    scan = db.query(models.ScanSession).filter(models.ScanSession.id == scan_id).first()
+    if not scan:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    return {
+        "id": scan.id,
+        "product_name": scan.product_name,
+        "category": scan.category,
+        "overall_verdict": scan.overall_verdict,
+        "compliance_score": scan.compliance_score,
+        "workflow_status": scan.workflow_status,
+        "reviewed_by": scan.reviewed_by,
+        "reviewed_at": scan.reviewed_at.isoformat() if scan.reviewed_at else None,
+        "reviewer_notes": scan.reviewer_notes,
+        "violations": [
+            {
+                "id": v.id,
+                "rule_id": v.rule_id,
+                "field_type": v.field_type,
+                "clause": v.clause,
+                "issue_title": v.issue_title,
+                "description": v.description,
+                "severity": v.severity,
+                "evidence_snippet": v.evidence_snippet
+            }
+            for v in scan.violations
+        ],
+        "report_url": f"/reports/{scan.report_filename}" if scan.report_filename else None,
+        "sha256_hash": scan.sha256_hash
+    }
+
+@app.post("/api/v1/inspections/{scan_id}/review", response_model=schemas.ScanSessionResponse)
+def review_inspection(
+    scan_id: str,
+    req: schemas.ScanReviewRequest,
+    db: Session = Depends(get_db),
+    admin_user: models.User = Depends(require_admin)
+):
+    return review_scan_submission(scan_id=scan_id, req=req, db=db, admin_user=admin_user)
+
+@app.post("/api/v1/inspections/{scan_id}/reinspect", response_model=schemas.ScanSessionResponse)
+def reinspect_submission(
+    scan_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_inspector)
+):
+    scan = db.query(models.ScanSession).filter(models.ScanSession.id == scan_id).first()
+    if not scan:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    scan.workflow_status = "UNDER_REVIEW"
+    audit = models.AuditLog(
+        id=str(uuid.uuid4()),
+        scan_id=scan.id,
+        actor_email=current_user.email,
+        actor_role=current_user.role,
+        action="REINSPECTION_REQUESTED",
+        entity_type="SCAN",
+        entity_id=scan.id,
+        description=f"Reinspection and secondary quality verification requested by {current_user.email}."
+    )
+    db.add(audit)
+    db.commit()
+    db.refresh(scan)
+    return schemas.ScanSessionResponse.model_validate(scan)
+
+@app.post("/api/v1/inspections/{scan_id}/images", response_model=schemas.ScanSessionResponse)
+async def upload_inspection_images(
+    scan_id: str,
+    files: Optional[List[UploadFile]] = File(None),
+    file: Optional[UploadFile] = File(None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    scan = db.query(models.ScanSession).filter(models.ScanSession.id == scan_id).first()
+    if not scan:
+        raise HTTPException(status_code=404, detail="Inspection not found")
+    
+    upload_list: List[UploadFile] = []
+    if files:
+        for f in files:
+            if f and f.filename:
+                upload_list.append(f)
+    if file and file.filename and file not in upload_list:
+        upload_list.append(file)
+    
+    if not upload_list:
+        raise HTTPException(status_code=400, detail="No physical packaging photos provided.")
+    
+    current_pkg_images = list(scan.packaging_images or [])
+    start_idx = len(current_pkg_images)
+    
+    angle_labels = [
+        "Angle 1: Front Panel (Brand & Net Quantity)",
+        "Angle 2: Back Panel (MRP, USP & Statutory Declarations)",
+        "Angle 3: Side Panel (Country of Origin & Batch)",
+        "Angle 4: Top / Bottom Seal & Barcode"
+    ]
+    
+    for idx, upload_f in enumerate(upload_list):
+        f_ext = os.path.splitext(upload_f.filename)[1] or ".jpg"
+        saved_filename = f"{scan_id}_angle{start_idx + idx}{f_ext}"
+        saved_filepath = os.path.join(UPLOADS_DIR, saved_filename)
+        
+        with open(saved_filepath, "wb") as buffer:
+            shutil.copyfileobj(upload_f.file, buffer)
+            
+        prep_result = ImageProcessingService.preprocess_image(saved_filepath)
+        sharp_score = prep_result.get("sharpness_score", 0.95)
+        
+        lbl_idx = (start_idx + idx) % len(angle_labels)
+        current_pkg_images.append({
+            "image_index": start_idx + idx,
+            "filename": saved_filename,
+            "url": f"/uploads/{saved_filename}",
+            "angle_label": angle_labels[lbl_idx],
+            "sharpness_score": sharp_score,
+            "quality_verdict": "PASS" if sharp_score >= 0.3 else "BLURRY_RETAKE_RECOMMENDED"
+        })
+    
+    scan.packaging_images = current_pkg_images
+    db.commit()
+    db.refresh(scan)
+    return schemas.ScanSessionResponse.model_validate(scan)

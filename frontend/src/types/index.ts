@@ -177,3 +177,35 @@ export interface DemoSkuPreset {
   image_name: string;
   violations_summary: string[];
 }
+
+export type UiMode = 'web' | 'mobile';
+
+export type InspectionTab =
+  | 'dashboard'
+  | 'inspect'
+  | 'submissions'
+  | 'reviews'
+  | 'reports'
+  | 'rules'
+  | 'settings'
+  | 'users'
+  | 'diagnostics'
+  | 'profile';
+
+export type InspectionWorkflowStep =
+  | 'CREATED'
+  | 'UPLOADING'
+  | 'UPLOADED'
+  | 'QUALITY_CHECK'
+  | 'PREPROCESSING'
+  | 'OCR_PROCESSING'
+  | 'CV_PROCESSING'
+  | 'EVIDENCE_PROCESSING'
+  | 'QUALITY_GATE'
+  | 'CLASSIFICATION'
+  | 'RULE_EVALUATION'
+  | 'DECISION_READY'
+  | 'REVIEW_REQUIRED'
+  | 'FINALIZED'
+  | 'PROCESSING_FAILED';
+
