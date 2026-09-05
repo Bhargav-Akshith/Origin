@@ -103,8 +103,6 @@ export function UserManagement({ }: Props) {
             <option value="ALL">All Roles</option>
             <option value="admin">Administrator</option>
             <option value="inspector">Inspector</option>
-            <option value="reviewer">Reviewer</option>
-            <option value="operator">Operator</option>
           </select>
 
           <select
@@ -262,8 +260,6 @@ export function UserManagement({ }: Props) {
                   >
                     <option value="admin">Administrator</option>
                     <option value="inspector">Inspector</option>
-                    <option value="reviewer">Reviewer</option>
-                    <option value="operator">Operator</option>
                   </select>
                 </div>
                 <div>

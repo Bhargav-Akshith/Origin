@@ -1,4 +1,22 @@
-from typing import List, Dict, Any, Tuple
+from typing import Any, List, Dict, Tuple, Optional
+
+class ComplianceResult(dict):
+
+    """Versatile result object that works as a dict, tuple, and attribute container"""
+    def __iter__(self):
+        return iter((self["overall_verdict"], self["compliance_score"], self["violations"]))
+
+    @property
+    def overall_verdict(self) -> str:
+        return self.get("overall_verdict", "PENDING")
+
+    @property
+    def compliance_score(self) -> float:
+        return self.get("compliance_score", 0.0)
+
+    @property
+    def violations(self) -> list:
+        return self.get("violations", [])
 
 class RuleEngineService:
     LEGAL_METROLOGY_RULES = [
@@ -77,15 +95,24 @@ class RuleEngineService:
     ]
 
     @classmethod
-    def evaluate_compliance(cls, extracted_fields: List[Dict[str, Any]]) -> Tuple[str, float, List[Dict[str, Any]]]:
+    def evaluate_compliance(cls, extracted_fields: Any) -> ComplianceResult:
         """
         Evaluates extracted declarations against all codified Legal Metrology rules.
-        Returns:
-            overall_verdict: 'COMPLIANT' or 'NON_COMPLIANT'
-            compliance_score: Float between 0 and 100
-            violations: List of detailed violation objects
+        Accepts either a List of field dicts or a Dict mapping field_type -> field dict.
+        Returns a versatile ComplianceResult object.
         """
-        field_map = {f["field_type"]: f for f in extracted_fields}
+        if isinstance(extracted_fields, dict):
+            field_list = list(extracted_fields.values())
+        elif isinstance(extracted_fields, list):
+            field_list = extracted_fields
+        else:
+            field_list = []
+
+        field_map = {}
+        for f in field_list:
+            if isinstance(f, dict):
+                field_map[f.get("field_type")] = f
+
         violations = []
         passed_rules_count = 0
         total_rules = len(cls.LEGAL_METROLOGY_RULES)
@@ -115,4 +142,11 @@ class RuleEngineService:
         compliance_score = round((passed_rules_count / total_rules) * 100.0, 1)
         overall_verdict = "COMPLIANT" if len(violations) == 0 else "NON_COMPLIANT"
 
-        return overall_verdict, compliance_score, violations
+        return ComplianceResult({
+            "overall_verdict": overall_verdict,
+            "compliance_score": compliance_score,
+            "violations": violations,
+            "passed_rules_count": passed_rules_count,
+            "total_rules": total_rules
+        })
+

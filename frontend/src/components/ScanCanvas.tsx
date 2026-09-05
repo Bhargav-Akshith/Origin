@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Eye, ZoomIn, ZoomOut, RotateCcw, Crosshair } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Eye, ZoomIn, ZoomOut, RotateCcw, Crosshair, Layers } from 'lucide-react';
 import type { ExtractedField, ScanSession } from '../types';
 import { type Language, translations } from '../i18n/translations';
 
@@ -14,6 +14,19 @@ export function ScanCanvas({ scan, selectedField, onSelectField, lang }: Props) 
   const t = translations[lang];
   const [showBoxes, setShowBoxes] = useState(true);
   const [zoom, setZoom] = useState(100);
+  const [activeAngleIndex, setActiveAngleIndex] = useState(0);
+
+  // Auto-switch to the angle containing the selected field if it has an image_index
+  useEffect(() => {
+    if (selectedField?.image_index !== undefined && selectedField.image_index !== null) {
+      setActiveAngleIndex(selectedField.image_index);
+    }
+  }, [selectedField]);
+
+  // Reset angle index when scan changes
+  useEffect(() => {
+    setActiveAngleIndex(0);
+  }, [scan?.id]);
 
   if (!scan) {
     return (
@@ -27,8 +40,49 @@ export function ScanCanvas({ scan, selectedField, onSelectField, lang }: Props) 
     );
   }
 
+  const packagingImages = scan.packaging_images && scan.packaging_images.length > 0
+    ? scan.packaging_images
+    : [{ url: scan.image_url, angle_label: 'Main / Front Panel', filename: 'primary_image.jpg' }];
+
+  const currentAngle = packagingImages[activeAngleIndex] || packagingImages[0];
+  const activeImageUrl = currentAngle?.url || scan.image_url;
+
+  // Filter fields belonging to the current active angle (or all if no image_index assigned)
+  const currentAngleFields = scan.extracted_fields.filter((f) => {
+    if (f.image_index === undefined || f.image_index === null) return true;
+    return f.image_index === activeAngleIndex;
+  });
+
   return (
     <div className="gov-card flex flex-col overflow-hidden">
+      {/* Multi-Angle Panel Switcher Bar (if multi-image capture is present) */}
+      {packagingImages.length > 1 && (
+        <div className="bg-[#0B1E33] px-3 py-2 border-b border-slate-700 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center space-x-2 text-xs text-slate-300">
+            <Layers className="w-3.5 h-3.5 text-amber-400" />
+            <span className="font-bold uppercase tracking-wider text-[11px] text-amber-300">
+              Multi-Angle Packaging Views ({packagingImages.length} Panels):
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {packagingImages.map((img, idx) => (
+              <button
+                key={idx}
+                onClick={() => setActiveAngleIndex(idx)}
+                className={`px-2.5 py-1 rounded text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  activeAngleIndex === idx
+                    ? 'bg-amber-500 text-slate-950 shadow-sm ring-1 ring-amber-300'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700'
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${activeAngleIndex === idx ? 'bg-slate-950' : 'bg-emerald-400'}`} />
+                <span>Angle {idx + 1}: {img.angle_label || `Panel ${idx + 1}`}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Header Controls */}
       <div className="bg-slate-100 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
         <div className="flex items-center space-x-2">
@@ -37,7 +91,7 @@ export function ScanCanvas({ scan, selectedField, onSelectField, lang }: Props) 
             {t.canvasTitle}
           </span>
           <span className="text-[10px] bg-slate-200 text-slate-800 px-2 py-0.5 rounded font-mono font-semibold">
-            {scan.extracted_fields.length} {t.spatialZones}
+            {currentAngleFields.filter((f) => f.bbox).length} {t.spatialZones} on {currentAngle?.angle_label || 'Current Panel'}
           </span>
         </div>
 
@@ -89,8 +143,8 @@ export function ScanCanvas({ scan, selectedField, onSelectField, lang }: Props) 
         >
           {/* Base Product Image */}
           <img
-            src={scan.image_url}
-            alt={scan.product_name}
+            src={activeImageUrl}
+            alt={`${scan.product_name} - ${currentAngle?.angle_label || 'View'}`}
             className="max-h-[440px] w-auto rounded shadow-lg border border-slate-700 select-none object-contain"
           />
 
@@ -101,7 +155,7 @@ export function ScanCanvas({ scan, selectedField, onSelectField, lang }: Props) 
               viewBox="0 0 100 100"
               preserveAspectRatio="none"
             >
-              {scan.extracted_fields.map((field) => {
+              {currentAngleFields.map((field) => {
                 if (!field.bbox) return null;
                 const isSelected = selectedField?.field_type === field.field_type;
                 const isValid = field.is_valid;
@@ -112,7 +166,7 @@ export function ScanCanvas({ scan, selectedField, onSelectField, lang }: Props) 
 
                 return (
                   <g
-                    key={field.field_type}
+                    key={`${field.field_type}-${field.image_index ?? 0}`}
                     className="cursor-pointer pointer-events-auto transition-all"
                     onClick={() => onSelectField(isSelected ? null : field)}
                   >
@@ -131,7 +185,7 @@ export function ScanCanvas({ scan, selectedField, onSelectField, lang }: Props) 
                     <rect
                       x={field.bbox.x}
                       y={Math.max(0, field.bbox.y - 3.5)}
-                      width={Math.min(field.bbox.w, 22)}
+                      width={Math.min(field.bbox.w, 24)}
                       height="3.2"
                       fill={strokeColor}
                       rx="0.4"
@@ -156,7 +210,7 @@ export function ScanCanvas({ scan, selectedField, onSelectField, lang }: Props) 
       {/* Canvas Footer / Active Field Callout */}
       <div className="bg-slate-50 p-2.5 border-t border-slate-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         {selectedField ? (
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 flex-wrap gap-y-1">
             <span
               className={`w-2.5 h-2.5 rounded-full shrink-0 ${
                 selectedField.is_valid ? 'bg-emerald-600' : 'bg-rose-600'
@@ -175,6 +229,11 @@ export function ScanCanvas({ scan, selectedField, onSelectField, lang }: Props) 
             >
               {selectedField.is_valid ? t.passBadge : t.violationBadge}
             </span>
+            {selectedField.image_index !== undefined && (
+              <span className="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-medium">
+                Panel {selectedField.image_index + 1}
+              </span>
+            )}
           </div>
         ) : (
           <span className="text-slate-500 text-[11px]">
@@ -194,3 +253,4 @@ export function ScanCanvas({ scan, selectedField, onSelectField, lang }: Props) 
     </div>
   );
 }
+

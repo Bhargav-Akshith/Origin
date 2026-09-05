@@ -5,6 +5,15 @@ export interface BoundingBox {
   h: number;
 }
 
+export interface PackagingImage {
+  image_index: number;
+  filename: string;
+  url: string;
+  angle_label: string;
+  sharpness_score?: number;
+  quality_verdict?: string;
+}
+
 export interface ExtractedField {
   id?: string;
   field_type: string;
@@ -12,6 +21,8 @@ export interface ExtractedField {
   raw_text: string | null;
   normalized_value: string | null;
   bbox: BoundingBox | null;
+  image_index?: number;
+  image_url?: string | null;
   confidence: number;
   is_valid: boolean;
   validation_message: string | null;
@@ -50,6 +61,7 @@ export interface ScanSession {
   category: string;
   image_filename?: string;
   image_url: string;
+  packaging_images?: PackagingImage[];
   status: string;
   workflow_status: 'NEW' | 'PROCESSING' | 'UNDER_REVIEW' | 'COMPLETED' | 'REJECTED' | 'NOTICE_ISSUED';
   overall_verdict: 'COMPLIANT' | 'NON_COMPLIANT' | 'PENDING';
@@ -71,13 +83,14 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'inspector' | 'reviewer' | 'operator';
+  role: 'admin' | 'inspector';
   status: 'ACTIVE' | 'INACTIVE' | 'BLOCKED';
   department?: string;
   badge_number?: string;
   last_active_at?: string;
   created_at?: string;
 }
+
 
 export interface TokenResponse {
   access_token: string;

@@ -55,6 +55,8 @@ class ExtractedFieldSchema(BaseModel):
     raw_text: Optional[str] = None
     normalized_value: Optional[str] = None
     bbox: Optional[BoundingBox] = None
+    image_index: Optional[int] = 0
+    image_url: Optional[str] = None
     confidence: float
     is_valid: bool
     validation_message: Optional[str] = None
@@ -99,6 +101,7 @@ class ScanSessionResponse(BaseModel):
     category: str
     image_filename: str
     image_url: str
+    packaging_images: Optional[List[Dict[str, Any]]] = None
     status: str
     workflow_status: str
     overall_verdict: str
@@ -116,6 +119,7 @@ class ScanSessionResponse(BaseModel):
     audit_logs: List[AuditLogSchema] = []
 
     model_config = {"from_attributes": True}
+
 
 # Scan Review Request
 class ScanReviewRequest(BaseModel):

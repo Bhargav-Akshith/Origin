@@ -10,6 +10,8 @@ from database import engine, SessionLocal, Base
 import models
 from services.auth_service import hash_password
 from services.rule_engine import RuleEngineService
+from services.report_service import ReportService
+
 
 def seed_database():
     print("[*] Initializing database tables...")
@@ -26,11 +28,11 @@ def seed_database():
                 "password_hash": hash_password("Admin@2026"),
                 "role": "admin",
                 "status": "ACTIVE",
-                "department": "Central Legal Metrology Enforcement Wing",
+                "department": "Central Legal Metrology Enforcement Directorate",
                 "badge_number": "CLM-GOV-01"
             },
             {
-                "id": "USR-INSPECT-02",
+                "id": "USR-INSPECT-01",
                 "name": "Inspector Rajesh Sharma",
                 "email": "inspector.sharma@consumer.gov.in",
                 "password_hash": hash_password("Inspect@2026"),
@@ -40,24 +42,24 @@ def seed_database():
                 "badge_number": "GOV-8821"
             },
             {
-                "id": "USR-REVIEW-03",
-                "name": "Senior Legal Officer Priya Verma",
-                "email": "reviewer.verma@consumer.gov.in",
-                "password_hash": hash_password("Review@2026"),
-                "role": "reviewer",
+                "id": "USR-INSPECT-02",
+                "name": "Inspector Amit Patel",
+                "email": "inspector.patel@consumer.gov.in",
+                "password_hash": hash_password("Inspect@2026"),
+                "role": "inspector",
                 "status": "ACTIVE",
-                "department": "Standards & Compliance Review Tribunal",
-                "badge_number": "REV-GOV-14"
+                "department": "Port & Customs Inspection Cell — West Zone",
+                "badge_number": "GOV-8822"
             },
             {
-                "id": "USR-OPERATOR-04",
-                "name": "Terminal Operator Ananya Das",
-                "email": "ananya.das@consumer.gov.in",
-                "password_hash": hash_password("Operator@2026"),
-                "role": "operator",
+                "id": "USR-INSPECT-03",
+                "name": "Inspector Vikram Singh",
+                "email": "inspector.singh@consumer.gov.in",
+                "password_hash": hash_password("Inspect@2026"),
+                "role": "inspector",
                 "status": "ACTIVE",
-                "department": "Port Inspection & Customs Clearing Hub",
-                "badge_number": "OPS-GOV-92"
+                "department": "E-Commerce & Digital Pre-Pack Surveillance Wing",
+                "badge_number": "GOV-8823"
             }
         ]
 
@@ -67,9 +69,15 @@ def seed_database():
                 db.add(models.User(**u))
                 print(f"  [OK] Seeded User: {u['name']} ({u['role']} - {u['email']})")
             else:
+                existing_user.name = u["name"]
                 existing_user.role = u["role"]
                 existing_user.status = u["status"]
+                existing_user.department = u["department"]
+                existing_user.badge_number = u["badge_number"]
                 existing_user.password_hash = u["password_hash"]
+
+        # Clean up any legacy non-admin/non-inspector roles
+        db.query(models.User).filter(~models.User.role.in_(["admin", "inspector"])).update({"role": "inspector"}, synchronize_session=False)
 
         # 2. Seed Compliance Rules
         for r in RuleEngineService.LEGAL_METROLOGY_RULES:
@@ -105,36 +113,30 @@ def seed_database():
         sample_alerts = [
             ("CRITICAL", "Repeated Missing Origin Violations Flagged", "Multiple smart electronics batches imported without mandatory Rule 6(1)(n) declarations.", "COMPLIANCE"),
             ("WARNING", "Unit Sale Price (USP) Mathematical Discrepancy", "Automated scan detected 3 SKUs with inverted gram-to-kilogram USP ratios.", "COMPLIANCE"),
-            ("INFO", "Central Enforcement OCR Engine Active", "Version 2.2 deployed with multi-threading and CLAHE contrast enhancement.", "SYSTEM")
+            ("INFO", "Central Enforcement OCR Engine Active", "Version 2.3 deployed with Multi-Image Evidence Fusion and CLAHE contrast enhancement.", "SYSTEM")
         ]
         for sev, title, msg, cat in sample_alerts:
-            existing_alert = db.query(models.SystemAlert).filter(models.SystemAlert.title == title).first()
-            if not existing_alert:
+            alt_exists = db.query(models.SystemAlert).filter(models.SystemAlert.title == title).first()
+            if not alt_exists:
                 db.add(models.SystemAlert(id=str(uuid.uuid4()), severity=sev, title=title, message=msg, category=cat, is_read=False))
 
-        # 5. Seed AI Diagnostic Metrics
-        if db.query(models.AiMetricLog).count() == 0:
-            for i in range(12):
-                db.add(models.AiMetricLog(
-                    id=str(uuid.uuid4()),
-                    operation="OCR_PARSER_AUDIT",
-                    model_name="OpenCV-Tesseract-RegexEngine-v2.2",
-                    latency_ms=round(110.0 + (i * 3.5), 1),
-                    confidence_avg=round(0.92 + ((i % 5) * 0.015), 3),
-                    fields_extracted=7,
-                    status="SUCCESS",
-                    timestamp=datetime.utcnow() - timedelta(minutes=i * 15)
-                ))
+        # 5. Seed Benchmark Scans & Physical PDF Certificates
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        reports_dir = os.path.join(base_dir, "reports")
+        os.makedirs(reports_dir, exist_ok=True)
 
-        # 6. Seed Benchmark Scans
         demo_scans = [
             {
                 "id": "DEMO-BISCUITS-01",
-                "user_id": "USR-INSPECT-02",
+                "user_id": "USR-INSPECT-01",
                 "product_name": "Astra Gold Digestive Biscuits 500g",
                 "category": "Packaged Food, Edible Oils & Confectionery",
                 "image_filename": "demo_compliant_biscuits.jpg",
                 "image_url": "/demo_assets/demo_compliant_biscuits.jpg",
+                "packaging_images": [
+                    {"image_index": 0, "filename": "demo_compliant_biscuits.jpg", "url": "/demo_assets/demo_compliant_biscuits.jpg", "angle_label": "Angle 1: Front Principal Display Panel (Brand & Net Qty)"},
+                    {"image_index": 1, "filename": "demo_compliant_biscuits.jpg", "url": "/demo_assets/demo_compliant_biscuits.jpg", "angle_label": "Angle 2: Back Panel (MRP, USP & Manufacturer Info)"}
+                ],
                 "status": "completed",
                 "workflow_status": "COMPLETED",
                 "overall_verdict": "COMPLIANT",
@@ -145,7 +147,7 @@ def seed_database():
                 "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
                 "reviewer_notes": "All 7 statutory declarations verified. Unit Sale Price conforms to metric scale.",
                 "reviewed_by": "Chief Controller of Legal Metrology",
-                "reviewed_at": datetime.utcnow()
+                "reviewed_at": datetime.now()
             },
             {
                 "id": "DEMO-SNACKS-02",
@@ -154,6 +156,10 @@ def seed_database():
                 "category": "Packaged Food, Edible Oils & Confectionery",
                 "image_filename": "demo_violation_mrp_usp.jpg",
                 "image_url": "/demo_assets/demo_violation_mrp_usp.jpg",
+                "packaging_images": [
+                    {"image_index": 0, "filename": "demo_violation_mrp_usp.jpg", "url": "/demo_assets/demo_violation_mrp_usp.jpg", "angle_label": "Angle 1: Front Panel (Commodity Name)"},
+                    {"image_index": 1, "filename": "demo_violation_mrp_usp.jpg", "url": "/demo_assets/demo_violation_mrp_usp.jpg", "angle_label": "Angle 2: Rear Panel (Missing Tax Statement & USP)"}
+                ],
                 "status": "completed",
                 "workflow_status": "NOTICE_ISSUED",
                 "overall_verdict": "NON_COMPLIANT",
@@ -164,15 +170,19 @@ def seed_database():
                 "sha256_hash": "a1b2c3d4e5f67890123456789abcdef0123456789abcdef0123456789abcdef0",
                 "reviewer_notes": "Section 39 Notice drafted for missing tax declaration and omitted consumer redressal email.",
                 "reviewed_by": "Chief Controller of Legal Metrology",
-                "reviewed_at": datetime.utcnow()
+                "reviewed_at": datetime.now()
             },
             {
                 "id": "DEMO-LOTION-03",
-                "user_id": "USR-INSPECT-02",
+                "user_id": "USR-INSPECT-03",
                 "product_name": "GlowSilk Herbal Body Lotion 250ml",
                 "category": "Cosmetics, Soaps & Personal Hygiene",
                 "image_filename": "demo_violation_origin.jpg",
                 "image_url": "/demo_assets/demo_violation_origin.jpg",
+                "packaging_images": [
+                    {"image_index": 0, "filename": "demo_violation_origin.jpg", "url": "/demo_assets/demo_violation_origin.jpg", "angle_label": "Angle 1: Front Panel"},
+                    {"image_index": 1, "filename": "demo_violation_origin.jpg", "url": "/demo_assets/demo_violation_origin.jpg", "angle_label": "Angle 2: Back Panel (Omitted Country of Origin)"}
+                ],
                 "status": "completed",
                 "workflow_status": "UNDER_REVIEW",
                 "overall_verdict": "NON_COMPLIANT",
@@ -182,8 +192,8 @@ def seed_database():
                 "report_url": "/reports/certificate_DEMO-LOTION-03.pdf",
                 "sha256_hash": "f9e8d7c6b5a43210fedcba9876543210fedcba9876543210fedcba9876543210",
                 "reviewer_notes": "Pending manufacturer country of origin proof under Rule 6(1)(n).",
-                "reviewed_by": "Senior Legal Officer Priya Verma",
-                "reviewed_at": datetime.utcnow()
+                "reviewed_by": "Chief Controller of Legal Metrology",
+                "reviewed_at": datetime.now()
             }
         ]
 
@@ -207,8 +217,22 @@ def seed_database():
                 )
                 db.add(audit)
 
+            # Generate physical PDF on disk
+            pdf_path = os.path.join(reports_dir, scan_data["report_filename"])
+            ReportService.generate_inspection_certificate(
+                scan_id=scan_data["id"],
+                product_name=scan_data["product_name"],
+                category=scan_data["category"],
+                verdict=scan_data["overall_verdict"],
+                compliance_score=scan_data["compliance_score"],
+                fields=[],
+                violations=[],
+                output_path=pdf_path,
+                inspector_id="GOV-8821"
+            )
+
         db.commit()
-        print("[SUCCESS] Database seed completed successfully!")
+        print("[SUCCESS] Database seed completed successfully with verified 2-role hierarchy and generated PDF certificates!")
     except Exception as e:
         db.rollback()
         print(f"[ERROR] Error seeding database: {e}")

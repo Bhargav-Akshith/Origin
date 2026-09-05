@@ -28,8 +28,7 @@ import {
   uploadPackagingImage,
   fetchScans,
   getMe,
-  loginUser,
-  switchDemoRole
+  loginUser
 } from './services/api';
 import { type Language, translations } from './i18n/translations';
 import { 
@@ -68,6 +67,12 @@ export function App() {
   const [selectedField, setSelectedField] = useState<ExtractedField | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Admin Password Clearance Modal State
+  const [showAdminAuthModal, setShowAdminAuthModal] = useState(false);
+  const [adminAuthPassword, setAdminAuthPassword] = useState('admin123');
+  const [showAdminAuthPasswordText, setShowAdminAuthPasswordText] = useState(false);
+  const [adminAuthError, setAdminAuthError] = useState<string | null>(null);
+
   // Initial Load
   useEffect(() => {
     loadInitialData();
@@ -99,36 +104,7 @@ export function App() {
     }
   };
 
-  // Select Portal from Gateway (Quick Demo One-Click Sign In)
-  const handleSelectPortal = async (portal: 'user' | 'admin', role = 'inspector') => {
-    setIsLoading(true);
-    try {
-      const targetRole = portal === 'admin' ? (role === 'reviewer' ? 'reviewer' : 'admin') : (role === 'operator' ? 'operator' : 'inspector');
-      const res = await switchDemoRole(targetRole);
-      setCurrentUser(res.user);
-      setActivePortal(portal);
-      setViewMode('portal');
-
-      // Refresh data
-      const [m, allScans] = await Promise.all([
-        fetchDashboardMetrics().catch(() => null),
-        fetchScans().catch(() => [])
-      ]);
-      if (m) setMetrics(m);
-      if (allScans) {
-        setScans(allScans);
-        if (allScans.length > 0 && !selectedScan) {
-          setSelectedScan(allScans[0]);
-        }
-      }
-    } catch (err) {
-      alert('Sign-In Error: ' + err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Manual Password Sign In from Gateway
+  // Password Sign In from Gateway
   const handleLoginSubmit = async (email: string, pass: string, portal: 'user' | 'admin') => {
     setIsLoading(true);
     try {
@@ -154,18 +130,23 @@ export function App() {
     }
   };
 
-  const handleRoleSwitch = async (newRole: string) => {
+  const handleAdminClearanceSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdminAuthError(null);
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      const res = await switchDemoRole(newRole);
+      const res = await loginUser('admin@consumer.gov.in', adminAuthPassword);
       setCurrentUser(res.user);
-      if (newRole !== 'admin' && newRole !== 'reviewer' && activePortal === 'admin') {
-        setActivePortal('user');
-      }
-      const allScans = await fetchScans();
-      setScans(allScans);
-    } catch (err) {
-      alert('Error switching role: ' + err);
+      setActivePortal('admin');
+      setShowAdminAuthModal(false);
+      const [m, allScans] = await Promise.all([
+        fetchDashboardMetrics().catch(() => null),
+        fetchScans().catch(() => [])
+      ]);
+      if (m) setMetrics(m);
+      if (allScans) setScans(allScans);
+    } catch (err: any) {
+      setAdminAuthError(err.message || 'Invalid Chief Administrator Password. Access Denied.');
     } finally {
       setIsLoading(false);
     }
@@ -188,10 +169,10 @@ export function App() {
     }
   };
 
-  const handleUpload = async (file: File, productName: string, category: string) => {
+  const handleUpload = async (files: File[] | File, productName: string, category: string) => {
     setIsLoading(true);
     try {
-      const scan = await uploadPackagingImage(file, productName, category);
+      const scan = await uploadPackagingImage(files, productName, category);
       setSelectedScan(scan);
       setSelectedField(null);
       setScans([scan, ...scans]);
@@ -209,7 +190,6 @@ export function App() {
   if (viewMode === 'gateway') {
     return (
       <GatewayLanding
-        onSelectPortal={handleSelectPortal}
         onLoginSubmit={handleLoginSubmit}
         lang={lang}
         onLanguageChange={setLang}
@@ -225,11 +205,108 @@ export function App() {
         activePortal={activePortal}
         onPortalChange={setActivePortal}
         currentUser={currentUser}
-        onRoleSwitch={handleRoleSwitch}
         onSignOut={handleSignOut}
+        onRequestAdminClearance={() => {
+          setAdminAuthError(null);
+          setShowAdminAuthModal(true);
+        }}
         lang={lang}
         onLanguageChange={setLang}
       />
+
+      {/* Admin Password Verification Modal */}
+      {showAdminAuthModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-slate-900 text-white rounded-2xl shadow-2xl border-2 border-amber-500/50 max-w-md w-full overflow-hidden">
+            <div className="bg-[#0A1929] px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center space-x-2.5">
+                <div className="p-2 bg-amber-500/20 text-amber-400 rounded-lg border border-amber-500/40">
+                  <Lock className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                    Administrative Clearance Required
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Rule 32 Central Enforcement Access Protocol
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAdminAuthModal(false)}
+                className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleAdminClearanceSubmit} className="p-6 space-y-4">
+              <p className="text-xs text-slate-300 leading-relaxed">
+                You are currently signed in as a <b>Field Inspector</b>. Access to Portal 1 (National Command, Rules Engine & Adjudication) is restricted to Chief Administrators. Enter your master password below to proceed.
+              </p>
+
+              {adminAuthError && (
+                <div className="text-xs text-rose-300 bg-rose-950/70 p-3 rounded-lg border border-rose-800 flex items-start gap-2">
+                  <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                  <span>{adminAuthError}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
+                  Administrator Master Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showAdminAuthPasswordText ? 'text' : 'password'}
+                    required
+                    value={adminAuthPassword}
+                    onChange={(e) => setAdminAuthPassword(e.target.value)}
+                    placeholder="Enter admin master password..."
+                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAdminAuthPasswordText(!showAdminAuthPasswordText)}
+                    className="absolute right-2.5 top-2.5 text-slate-400 hover:text-white text-[11px]"
+                  >
+                    {showAdminAuthPasswordText ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-[11px] bg-slate-950/80 p-2.5 rounded-lg border border-slate-800">
+                <span className="text-slate-400">Quick Test Password:</span>
+                <button
+                  type="button"
+                  onClick={() => setAdminAuthPassword('admin123')}
+                  className="font-mono text-amber-400 hover:underline font-bold"
+                >
+                  admin123
+                </button>
+              </div>
+
+              <div className="flex items-center justify-end space-x-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAdminAuthModal(false)}
+                  className="px-3.5 py-2 text-xs text-slate-400 hover:text-white font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold rounded-lg text-xs flex items-center space-x-1.5 shadow transition-all cursor-pointer"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>{isLoading ? 'Verifying...' : 'Authenticate & Enter Admin Command'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Main Container */}
       <main className="flex-1 gov-container py-5 space-y-5">
@@ -237,7 +314,7 @@ export function App() {
         {/* PORTAL 1: ADMIN CONTROL CENTER */}
         {/* ========================================================================= */}
         {activePortal === 'admin' && (
-          currentUser?.role !== 'admin' && currentUser?.role !== 'reviewer' ? (
+          currentUser?.role !== 'admin' ? (
             <div className="bg-white p-12 rounded-xl border border-rose-300 shadow-md text-center max-w-lg mx-auto">
               <ShieldAlert className="w-12 h-12 text-rose-600 mx-auto mb-3" />
               <h3 className="text-base font-bold text-slate-900">Administrative Clearance Required</h3>
@@ -245,10 +322,13 @@ export function App() {
                 Access to Portal 1 (Central Command & Adjudication Center) is restricted to Chief Controllers and authorized administrators.
               </p>
               <button
-                onClick={() => handleRoleSwitch('admin')}
-                className="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-xs font-bold shadow transition-colors"
+                onClick={() => {
+                  setAdminAuthError(null);
+                  setShowAdminAuthModal(true);
+                }}
+                className="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-xs font-bold shadow transition-colors cursor-pointer"
               >
-                Switch to Chief Admin Role (Demo)
+                Enter Admin Password for Clearance
               </button>
             </div>
           ) : (

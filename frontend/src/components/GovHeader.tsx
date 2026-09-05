@@ -5,9 +5,9 @@ import {
   UserCheck, 
   LayoutDashboard, 
   ScanLine, 
-  KeyRound,
   LogOut,
-  ChevronLeft
+  ChevronLeft,
+  Lock
 } from 'lucide-react';
 import type { User } from '../types';
 import { type Language, translations } from '../i18n/translations';
@@ -16,8 +16,8 @@ interface Props {
   activePortal: 'admin' | 'user';
   onPortalChange: (portal: 'admin' | 'user') => void;
   currentUser: User | null;
-  onRoleSwitch: (role: string) => void;
   onSignOut: () => void;
+  onRequestAdminClearance: () => void;
   lang: Language;
   onLanguageChange: (lang: Language) => void;
 }
@@ -26,8 +26,8 @@ export function GovHeader({
   activePortal,
   onPortalChange,
   currentUser,
-  onRoleSwitch,
   onSignOut,
+  onRequestAdminClearance,
   lang,
   onLanguageChange
 }: Props) {
@@ -39,6 +39,8 @@ export function GovHeader({
     month: 'short',
     year: 'numeric'
   });
+
+  const isAdmin = currentUser?.role === 'admin';
 
   return (
     <header className="bg-[#0F2942] text-white border-b-4 border-amber-600 shadow-md">
@@ -52,20 +54,13 @@ export function GovHeader({
           </div>
           
           <div className="flex items-center space-x-3">
-            {/* Quick Demo Role Switcher for Judges */}
-            <div className="flex items-center space-x-1.5 bg-slate-800 px-2 py-0.5 rounded border border-slate-700 text-[10px]">
-              <KeyRound className="w-3 h-3 text-amber-400" />
-              <span className="text-slate-400 font-semibold">Demo Role:</span>
-              <select
-                value={currentUser?.role || 'admin'}
-                onChange={(e) => onRoleSwitch(e.target.value)}
-                className="bg-slate-900 text-amber-300 font-bold px-1.5 py-0.5 rounded border border-slate-600 outline-none text-[10px] cursor-pointer"
-              >
-                <option value="admin">Chief Admin (Full Control)</option>
-                <option value="inspector">Field Inspector</option>
-                <option value="reviewer">Senior Reviewer</option>
-                <option value="operator">Terminal Operator</option>
-              </select>
+            {/* Authenticated Role Indicator */}
+            <div className="flex items-center space-x-1.5 bg-slate-800 px-2.5 py-0.5 rounded border border-slate-700 text-[11px]">
+              <span className={`w-2 h-2 rounded-full ${isAdmin ? 'bg-amber-400' : 'bg-emerald-400'}`} />
+              <span className="text-slate-400 font-semibold">Active Session:</span>
+              <span className={`font-bold uppercase ${isAdmin ? 'text-amber-300' : 'text-emerald-300'}`}>
+                {isAdmin ? 'Chief Administrator' : 'Field Inspector'}
+              </span>
             </div>
 
             {/* Language Selector */}
@@ -96,14 +91,14 @@ export function GovHeader({
               </button>
             </div>
 
-            {/* Return to Gateway / Sign Out */}
+            {/* Return to Gateway / Lock & Sign Out */}
             <button
               onClick={onSignOut}
-              className="flex items-center space-x-1 bg-rose-950/80 hover:bg-rose-900 text-rose-300 hover:text-white px-2 py-0.5 rounded border border-rose-800 text-[10px] font-bold transition-colors"
-              title="Sign out to Main Gateway"
+              className="flex items-center space-x-1 bg-rose-950/80 hover:bg-rose-900 text-rose-300 hover:text-white px-2.5 py-0.5 rounded border border-rose-800 text-[10px] font-bold transition-colors cursor-pointer"
+              title="Lock Session and Sign Out to Main Gateway"
             >
               <LogOut className="w-3 h-3" />
-              <span>{lang === 'hi' ? 'गेटवे पर लौटें' : 'Sign Out / Gateway'}</span>
+              <span>{lang === 'hi' ? 'लॉगआउट / गेटवे' : 'Sign Out'}</span>
             </button>
           </div>
         </div>
@@ -131,7 +126,7 @@ export function GovHeader({
             </div>
           </div>
 
-          {/* Active Officer Status & Portal Indicator */}
+          {/* Active Officer Status */}
           <div className="flex items-center space-x-3 text-xs">
             <div className="hidden lg:flex items-center space-x-2 text-slate-300 bg-slate-800/90 px-3 py-1.5 rounded-md border border-slate-700">
               <Clock className="w-3.5 h-3.5 text-amber-400" />
@@ -143,7 +138,7 @@ export function GovHeader({
               <div className="text-left">
                 <p className="font-bold text-[11px] leading-tight text-white">{currentUser?.name || 'Authorized Officer'}</p>
                 <p className="text-[9px] text-amber-300 font-semibold uppercase">
-                  {currentUser?.role || 'inspector'} • {currentUser?.badge_number || 'GOV-8821'}
+                  {currentUser?.role === 'admin' ? 'Administrator' : 'Field Inspector'} • {currentUser?.badge_number || 'GOV-8821'}
                 </p>
               </div>
             </div>
@@ -157,7 +152,7 @@ export function GovHeader({
           <div className="flex items-center space-x-2">
             <button
               onClick={onSignOut}
-              className="flex items-center space-x-1 text-slate-400 hover:text-white px-2 py-1.5 rounded text-xs transition-colors"
+              className="flex items-center space-x-1 text-slate-400 hover:text-white px-2 py-1.5 rounded text-xs transition-colors cursor-pointer"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
               <span>{lang === 'hi' ? 'गेटवे' : 'Gateway'}</span>
@@ -167,7 +162,7 @@ export function GovHeader({
             <nav className="flex space-x-1 py-1">
               <button
                 onClick={() => onPortalChange('user')}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-t-lg text-xs font-bold transition-all ${
+                className={`flex items-center space-x-2 px-4 py-2 rounded-t-lg text-xs font-bold transition-all cursor-pointer ${
                   activePortal === 'user'
                     ? 'bg-white text-slate-900 shadow-sm border-t-2 border-emerald-500'
                     : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
@@ -179,21 +174,28 @@ export function GovHeader({
 
               <button
                 onClick={() => {
-                  if (currentUser?.role !== 'admin') {
-                    onRoleSwitch('admin');
+                  if (isAdmin) {
+                    onPortalChange('admin');
+                  } else {
+                    onRequestAdminClearance();
                   }
-                  onPortalChange('admin');
                 }}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-t-lg text-xs font-bold transition-all ${
+                className={`flex items-center space-x-2 px-4 py-2 rounded-t-lg text-xs font-bold transition-all cursor-pointer ${
                   activePortal === 'admin'
                     ? 'bg-white text-slate-900 shadow-sm border-t-2 border-amber-500'
                     : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
                 }`}
               >
-                <LayoutDashboard className="w-4 h-4 text-amber-600" />
+                {isAdmin ? (
+                  <LayoutDashboard className="w-4 h-4 text-amber-600" />
+                ) : (
+                  <Lock className="w-3.5 h-3.5 text-amber-400" />
+                )}
                 <span>{t.adminPortalTab} (Executive Command)</span>
-                <span className="text-[9px] bg-amber-400 text-slate-950 px-1.5 py-0.2 rounded font-black">
-                  ADMIN
+                <span className={`text-[9px] px-1.5 py-0.2 rounded font-black ${
+                  isAdmin ? 'bg-amber-400 text-slate-950' : 'bg-slate-700 text-amber-300 border border-slate-600'
+                }`}>
+                  {isAdmin ? 'ADMIN' : 'PASSWORD REQUIRED'}
                 </span>
               </button>
             </nav>
@@ -204,7 +206,7 @@ export function GovHeader({
             <span>
               {activePortal === 'admin' 
                 ? 'Admin Control Center • Full Clearance' 
-                : 'Inspector Terminal • Ready for Scanning'}
+                : `Inspector Terminal • Logged in as ${currentUser?.name || 'Officer'}`}
             </span>
           </div>
         </div>

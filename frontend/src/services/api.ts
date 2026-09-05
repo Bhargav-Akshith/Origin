@@ -38,6 +38,20 @@ const getHeaders = (isJson = true) => {
   return headers;
 };
 
+export async function getErrorMessage(res: Response, fallback = 'Operation failed'): Promise<string> {
+  try {
+    const data = await res.json();
+    return data.detail || (typeof data === 'string' ? data : JSON.stringify(data));
+  } catch {
+    try {
+      const text = await res.text();
+      return text || `${fallback} (HTTP ${res.status})`;
+    } catch {
+      return `${fallback} (HTTP ${res.status})`;
+    }
+  }
+}
+
 // ---------------------------------------------------------------------------
 // AUTHENTICATION APIs
 // ---------------------------------------------------------------------------
@@ -49,8 +63,7 @@ export const loginUser = async (email: string, password: string): Promise<TokenR
     body: JSON.stringify({ email, password })
   });
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.detail || 'Login failed');
+    throw new Error(await getErrorMessage(res, 'Official sign-in failed'));
   }
   const data: TokenResponse = await res.json();
   setAuthToken(data.access_token);
@@ -59,7 +72,9 @@ export const loginUser = async (email: string, password: string): Promise<TokenR
 
 export const switchDemoRole = async (role: string): Promise<TokenResponse> => {
   const res = await fetch(`${API_BASE}/auth/switch-demo-role/${role}`);
-  if (!res.ok) throw new Error('Role switch failed');
+  if (!res.ok) {
+    throw new Error(await getErrorMessage(res, 'Role switch failed'));
+  }
   const data: TokenResponse = await res.json();
   setAuthToken(data.access_token);
   return data;
@@ -69,9 +84,12 @@ export const getMe = async (): Promise<User> => {
   const res = await fetch(`${API_BASE}/auth/me`, {
     headers: getHeaders()
   });
-  if (!res.ok) throw new Error('Session expired');
+  if (!res.ok) {
+    throw new Error(await getErrorMessage(res, 'Session verification expired'));
+  }
   return res.json();
 };
+
 
 // ---------------------------------------------------------------------------
 // ADMIN APIs
@@ -278,12 +296,15 @@ export const fetchScanDetails = async (scanId: string): Promise<ScanSession> => 
 };
 
 export const uploadPackagingImage = async (
-  file: File,
+  files: File[] | File,
   productName: string,
   category: string
 ): Promise<ScanSession> => {
   const formData = new FormData();
-  formData.append('file', file);
+  const fileArray = Array.isArray(files) ? files : [files];
+  for (const f of fileArray) {
+    formData.append('files', f);
+  }
   formData.append('product_name', productName);
   formData.append('category', category);
 
@@ -294,11 +315,12 @@ export const uploadPackagingImage = async (
   });
 
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.detail || 'Upload and processing failed');
+    const errorMsg = await getErrorMessage(res, 'Packaging upload and verification failed');
+    throw new Error(errorMsg);
   }
 
   return res.json();
 };
 
 export const getReportPdfUrl = (scanId: string) => `${API_BASE}/scans/${scanId}/pdf`;
+

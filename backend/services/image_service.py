@@ -50,6 +50,7 @@ class ImageProcessingService:
 
         return {
             "original_path": image_path,
+            "processed_path": preprocessed_path,
             "preprocessed_path": preprocessed_path,
             "width": w,
             "height": h,
@@ -58,3 +59,4 @@ class ImageProcessingService:
             "brightness": round(float(brightness), 2),
             "quality_verdict": "GOOD" if not (is_blurry or is_too_dark or is_too_bright) else "SUBOPTIMAL"
         }
+

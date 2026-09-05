@@ -42,6 +42,7 @@ class ScanSession(Base):
     report_filename = Column(String(255), nullable=True)
     report_url = Column(String(500), nullable=True)
     sha256_hash = Column(String(64), nullable=True)
+    packaging_images = Column(JSON, nullable=True)  # [{"url": "/uploads/...", "filename": "...", "angle": "Front Panel"}]
     reviewer_notes = Column(Text, nullable=True)
     reviewed_by = Column(String(100), nullable=True)
     reviewed_at = Column(DateTime, nullable=True)
@@ -63,11 +64,14 @@ class ExtractedField(Base):
     raw_text = Column(Text, nullable=True)
     normalized_value = Column(String(255), nullable=True)
     bbox = Column(JSON, nullable=True)  # {"x": 10, "y": 20, "w": 30, "h": 15}
+    image_index = Column(Integer, default=0)
+    image_url = Column(String(500), nullable=True)
     confidence = Column(Float, default=0.0)
     is_valid = Column(Boolean, default=False)
     validation_message = Column(String(255), nullable=True)
 
     scan = relationship("ScanSession", back_populates="extracted_fields")
+
 
 class ComplianceRule(Base):
     __tablename__ = "compliance_rules"

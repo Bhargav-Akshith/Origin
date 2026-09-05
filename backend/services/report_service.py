@@ -1,6 +1,8 @@
 import os
 import hashlib
+from typing import Optional, List, Dict, Any
 from datetime import datetime
+
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.platypus import (
@@ -38,24 +40,53 @@ class NumberedInspectionCanvas(canvas.Canvas):
         self.restoreState()
 
 class ReportService:
-    @staticmethod
+    @classmethod
     def generate_inspection_certificate(
+        cls,
         scan_id: str,
         product_name: str,
         category: str,
-        verdict: str,
-        compliance_score: float,
-        fields: list,
-        violations: list,
-        output_dir: str,
-        image_path: str = None
+        verdict: Optional[str] = None,
+        overall_verdict: Optional[str] = None,
+        compliance_score: float = 0.0,
+        fields: Optional[Any] = None,
+        declarations: Optional[Any] = None,
+        violations: Optional[List[Dict[str, Any]]] = None,
+        output_dir: Optional[str] = None,
+        output_path: Optional[str] = None,
+        inspector_id: Optional[str] = "INSPECTOR-GOV-8821",
+        image_path: Optional[str] = None,
+        **kwargs
     ) -> dict:
         """
         Generates an authoritative government-grade Legal Metrology compliance certificate in PDF.
         """
-        os.makedirs(output_dir, exist_ok=True)
-        filename = f"Inspection_Certificate_{scan_id[:8]}.pdf"
-        filepath = os.path.join(output_dir, filename)
+        verdict_clean = (verdict or overall_verdict or "COMPLIANT").upper()
+        violations_list = violations or []
+        
+        # Handle field list or dict
+        raw_fields = fields if fields is not None else (declarations or [])
+        if isinstance(raw_fields, dict):
+            field_list = list(raw_fields.values())
+        elif isinstance(raw_fields, list):
+            field_list = raw_fields
+        else:
+            field_list = []
+
+        # Determine output file path
+        if output_path:
+            filepath = output_path
+            filename = os.path.basename(output_path)
+            os.makedirs(os.path.dirname(os.path.abspath(filepath)), exist_ok=True)
+        elif output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+            filename = f"certificate_{scan_id}.pdf"
+            filepath = os.path.join(output_dir, filename)
+        else:
+            base_reports = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "reports")
+            os.makedirs(base_reports, exist_ok=True)
+            filename = f"certificate_{scan_id}.pdf"
+            filepath = os.path.join(base_reports, filename)
 
         doc = SimpleDocTemplate(
             filepath,
@@ -65,6 +96,7 @@ class ReportService:
             topMargin=50,
             bottomMargin=54
         )
+
 
         styles = getSampleStyleSheet()
 
@@ -124,7 +156,7 @@ class ReportService:
         story.append(HRFlowable(width="100%", thickness=1.2, color=colors.HexColor('#0F172A'), spaceAfter=8))
 
         # Metadata & Verdict Summary Card
-        is_compliant = verdict.upper() == "COMPLIANT"
+        is_compliant = verdict_clean == "COMPLIANT"
         verdict_color = colors.HexColor('#059669') if is_compliant else colors.HexColor('#DC2626')
         verdict_bg = colors.HexColor('#ECFDF5') if is_compliant else colors.HexColor('#FEF2F2')
 
@@ -133,10 +165,11 @@ class ReportService:
                 Paragraph(f"<b>Inspection Reference ID:</b> {scan_id}<br/>"
                           f"<b>Product / Commodity:</b> {product_name}<br/>"
                           f"<b>Category:</b> {category}<br/>"
-                          f"<b>Inspection Date &amp; Time:</b> {datetime.now().strftime('%d-%b-%Y %H:%M:%S UTC')}", style_body),
+                          f"<b>Inspection Date &amp; Time:</b> {datetime.now().strftime('%d-%b-%Y %H:%M:%S UTC')}<br/>"
+                          f"<b>Enforcement Officer:</b> {inspector_id}", style_body),
                 Paragraph(f"<b>OFFICIAL COMPLIANCE VERDICT</b><br/>"
-                          f"<font size=13 color='{verdict_color.hexval()}'><b>{verdict.upper()}</b></font><br/>"
-                          f"<b>Compliance Score:</b> {compliance_score}% &nbsp;|&nbsp; <b>Violations:</b> {len(violations)}", style_body)
+                          f"<font size=13 color='{verdict_color.hexval()}'><b>{verdict_clean}</b></font><br/>"
+                          f"<b>Compliance Score:</b> {compliance_score}% &nbsp;|&nbsp; <b>Violations:</b> {len(violations_list)}", style_body)
             ]
         ]
         meta_table = Table(meta_data, colWidths=[270, 234])
@@ -160,15 +193,16 @@ class ReportService:
         decl_data = [
             [Paragraph("<b>#</b>", style_th), Paragraph("<b>Mandatory Declaration</b>", style_th), Paragraph("<b>Detected Value</b>", style_th), Paragraph("<b>Legal Status</b>", style_th)]
         ]
-        for idx, f in enumerate(fields, 1):
-            status_text = "<font color='#059669'><b>PASS</b></font>" if f.get("is_valid") else "<font color='#DC2626'><b>FAIL / MISSING</b></font>"
-            val = f.get("normalized_value") or f.get("raw_text") or "<i>Not Detected</i>"
-            decl_data.append([
-                Paragraph(str(idx), style_body_bold),
-                Paragraph(f.get("field_label", f.get("field_type")), style_body),
-                Paragraph(str(val), style_body),
-                Paragraph(status_text, style_body)
-            ])
+        for idx, f in enumerate(field_list, 1):
+            if isinstance(f, dict):
+                status_text = "<font color='#059669'><b>PASS</b></font>" if f.get("is_valid") else "<font color='#DC2626'><b>FAIL / MISSING</b></font>"
+                val = f.get("normalized_value") or f.get("raw_text") or "<i>Not Detected</i>"
+                decl_data.append([
+                    Paragraph(str(idx), style_body_bold),
+                    Paragraph(str(f.get("field_label", f.get("field_type", "Field"))), style_body),
+                    Paragraph(str(val), style_body),
+                    Paragraph(status_text, style_body)
+                ])
 
         decl_table = Table(decl_data, colWidths=[20, 160, 234, 90])
         decl_table.setStyle(TableStyle([
@@ -184,20 +218,21 @@ class ReportService:
         story.append(Spacer(1, 10))
 
         # Violations Table (if any)
-        if violations:
+        if violations_list:
             story.append(Paragraph("<b>2. STATUTORY VIOLATIONS &amp; LEGAL CLAUSE BREACHES</b>", style_body_bold))
             story.append(Spacer(1, 4))
 
             viol_data = [
                 [Paragraph("<b>Clause</b>", style_th), Paragraph("<b>Violation Title</b>", style_th), Paragraph("<b>Statutory Description</b>", style_th), Paragraph("<b>Severity</b>", style_th)]
             ]
-            for v in violations:
-                viol_data.append([
-                    Paragraph(f"<b>{v.get('clause')}</b>", style_body_bold),
-                    Paragraph(v.get("issue_title"), style_body),
-                    Paragraph(v.get("description"), style_body),
-                    Paragraph(f"<font color='#DC2626'><b>{v.get('severity')}</b></font>", style_body)
-                ])
+            for v in violations_list:
+                if isinstance(v, dict):
+                    viol_data.append([
+                        Paragraph(f"<b>{v.get('clause', 'Rule 6')}</b>", style_body_bold),
+                        Paragraph(str(v.get("issue_title", "Violation")), style_body),
+                        Paragraph(str(v.get("description", "Breach detected")), style_body),
+                        Paragraph(f"<font color='#DC2626'><b>{v.get('severity', 'CRITICAL')}</b></font>", style_body)
+                    ])
 
             viol_table = Table(viol_data, colWidths=[80, 140, 214, 70])
             viol_table.setStyle(TableStyle([
@@ -213,7 +248,8 @@ class ReportService:
             story.append(Spacer(1, 10))
 
         # Cryptographic Digital Signature & Integrity Hash
-        sha256_input = f"{scan_id}_{product_name}_{verdict}_{compliance_score}_{len(violations)}"
+        sha256_input = f"{scan_id}_{product_name}_{verdict_clean}_{compliance_score}_{len(violations_list)}"
+
         sha256_hash = hashlib.sha256(sha256_input.encode()).hexdigest()
 
         audit_box_data = [

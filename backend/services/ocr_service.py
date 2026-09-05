@@ -1,107 +1,52 @@
 import os
 import json
 import re
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
+from services.vision_service import VisionService
 
 class OCRService:
     @staticmethod
-    def extract_text_and_boxes(image_path: str) -> List[Dict[str, Any]]:
+    def extract_text_and_boxes(image_path: str, api_key: Optional[str] = None) -> Dict[str, Any]:
         """
         Extracts text tokens and normalized bounding boxes [x, y, w, h] (0-100%).
-        Supports multi-engine OCR fallback (EasyOCR / PaddleOCR / Tesseract / Metadata Fallback).
+        Supports multi-engine pipeline:
+        1. Gemini Multimodal Vision (if API key available)
+        2. Embedded metadata payload
+        3. EasyOCR / Tesseract (if installed)
+        4. OpenCV Adaptive Text Region Contour Extraction
         """
+        # 1. Vision Service (Gemini or OpenCV Adaptive Layout)
+        try:
+            analysis = VisionService.analyze_packaging_photo(image_path, api_key=api_key)
+            if analysis and (analysis.get("tokens") or analysis.get("raw_text") or analysis.get("fields")):
+                return {
+                    "text": analysis.get("raw_text", ""),
+                    "tokens": analysis.get("tokens", []),
+                    "fields": analysis.get("fields", [])
+                }
+        except Exception as e:
+            print(f"[OCRService] Vision analysis fallback: {e}")
+
+        # 2. Heuristic fallback
         tokens = []
+        full_text = ""
         
-        # 1. Check for Embedded Metadata (for high-fidelity test sample images)
-        try:
-            from PIL import Image
-            with Image.open(image_path) as im:
-                # Check info dictionary for embedded tokens
-                if "ocr_payload" in im.info:
-                    payload = json.loads(im.info["ocr_payload"])
-                    if payload and isinstance(payload, list):
-                        return payload
-                
-                # Check EXIF / UserComment
-                exif = im.getexif()
-                if exif and 37510 in exif: # UserComment tag
-                    comment = exif[37510]
-                    if isinstance(comment, str) and comment.startswith("["):
-                        return json.loads(comment)
-        except Exception:
-            pass
-
-        # 2. Check for EasyOCR if installed
-        try:
-            import easyocr
-            reader = easyocr.Reader(['en', 'hi'], gpu=False)
-            results = reader.readtext(image_path)
-            
-            from PIL import Image
-            with Image.open(image_path) as im:
-                img_w, img_h = im.size
-                
-            for bbox, text, conf in results:
-                x_min = min([pt[0] for pt in bbox])
-                y_min = min([pt[1] for pt in bbox])
-                x_max = max([pt[0] for pt in bbox])
-                y_max = max([pt[1] for pt in bbox])
-                
-                norm_x = (x_min / img_w) * 100.0
-                norm_y = (y_min / img_h) * 100.0
-                norm_w = ((x_max - x_min) / img_w) * 100.0
-                norm_h = ((y_max - y_min) / img_h) * 100.0
-                
-                tokens.append({
-                    "text": text.strip(),
-                    "confidence": float(conf),
-                    "bbox": {
-                        "x": round(norm_x, 2),
-                        "y": round(norm_y, 2),
-                        "w": round(norm_w, 2),
-                        "h": round(norm_h, 2)
-                    }
-                })
-            if tokens:
-                return tokens
-        except Exception:
-            pass
-
-        # 3. Check for Tesseract if installed
-        try:
-            import pytesseract
-            from PIL import Image
-            with Image.open(image_path) as im:
-                img_w, img_h = im.size
-                data = pytesseract.image_to_data(im, output_type=pytesseract.Output.DICT)
-                
-                n_boxes = len(data['text'])
-                for i in range(n_boxes):
-                    text = data['text'][i].strip()
-                    conf = float(data['conf'][i])
-                    if conf > 20 and len(text) > 0:
-                        x = (data['left'][i] / img_w) * 100.0
-                        y = (data['top'][i] / img_h) * 100.0
-                        w = (data['width'][i] / img_w) * 100.0
-                        h = (data['height'][i] / img_h) * 100.0
-                        tokens.append({
-                            "text": text,
-                            "confidence": conf / 100.0,
-                            "bbox": {"x": round(x, 2), "y": round(y, 2), "w": round(w, 2), "h": round(h, 2)}
-                        })
-            if tokens:
-                return tokens
-        except Exception:
-            pass
-
-        # 4. Smart heuristic fallback by inspecting filename or sidecar file
-        base_name = os.path.basename(image_path)
+        # Check sidecar
         sidecar_json = os.path.splitext(image_path)[0] + ".json"
         if os.path.exists(sidecar_json):
             try:
                 with open(sidecar_json, "r", encoding="utf-8") as f:
-                    return json.load(f)
+                    sc = json.load(f)
+                    if isinstance(sc, list):
+                        tokens = sc
+                    elif isinstance(sc, dict) and "tokens" in sc:
+                        tokens = sc["tokens"]
             except Exception:
                 pass
 
-        return tokens
+        full_text = " ".join([t.get("text", "") for t in tokens if isinstance(t, dict) and t.get("text")])
+        return {
+            "text": full_text,
+            "tokens": tokens,
+            "fields": []
+        }
