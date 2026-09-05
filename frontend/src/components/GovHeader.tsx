@@ -1,4 +1,14 @@
-import { ShieldCheck, Clock, Globe, UserCheck, LayoutDashboard, ScanLine, KeyRound } from 'lucide-react';
+import { 
+  ShieldCheck, 
+  Clock, 
+  Globe, 
+  UserCheck, 
+  LayoutDashboard, 
+  ScanLine, 
+  KeyRound,
+  LogOut,
+  ChevronLeft
+} from 'lucide-react';
 import type { User } from '../types';
 import { type Language, translations } from '../i18n/translations';
 
@@ -7,6 +17,7 @@ interface Props {
   onPortalChange: (portal: 'admin' | 'user') => void;
   currentUser: User | null;
   onRoleSwitch: (role: string) => void;
+  onSignOut: () => void;
   lang: Language;
   onLanguageChange: (lang: Language) => void;
 }
@@ -16,6 +27,7 @@ export function GovHeader({
   onPortalChange,
   currentUser,
   onRoleSwitch,
+  onSignOut,
   lang,
   onLanguageChange
 }: Props) {
@@ -83,6 +95,16 @@ export function GovHeader({
                 हिन्दी
               </button>
             </div>
+
+            {/* Return to Gateway / Sign Out */}
+            <button
+              onClick={onSignOut}
+              className="flex items-center space-x-1 bg-rose-950/80 hover:bg-rose-900 text-rose-300 hover:text-white px-2 py-0.5 rounded border border-rose-800 text-[10px] font-bold transition-colors"
+              title="Sign out to Main Gateway"
+            >
+              <LogOut className="w-3 h-3" />
+              <span>{lang === 'hi' ? 'गेटवे पर लौटें' : 'Sign Out / Gateway'}</span>
+            </button>
           </div>
         </div>
       </div>
@@ -109,7 +131,7 @@ export function GovHeader({
             </div>
           </div>
 
-          {/* Active Officer Status */}
+          {/* Active Officer Status & Portal Indicator */}
           <div className="flex items-center space-x-3 text-xs">
             <div className="hidden lg:flex items-center space-x-2 text-slate-300 bg-slate-800/90 px-3 py-1.5 rounded-md border border-slate-700">
               <Clock className="w-3.5 h-3.5 text-amber-400" />
@@ -120,7 +142,9 @@ export function GovHeader({
               <UserCheck className="w-3.5 h-3.5 text-amber-400" />
               <div className="text-left">
                 <p className="font-bold text-[11px] leading-tight text-white">{currentUser?.name || 'Authorized Officer'}</p>
-                <p className="text-[9px] text-amber-300 font-semibold uppercase">{currentUser?.role || 'inspector'} • {currentUser?.badge_number || 'GOV-8821'}</p>
+                <p className="text-[9px] text-amber-300 font-semibold uppercase">
+                  {currentUser?.role || 'inspector'} • {currentUser?.badge_number || 'GOV-8821'}
+                </p>
               </div>
             </div>
           </div>
@@ -130,40 +154,58 @@ export function GovHeader({
       {/* Dual Portal Switcher Tabs Bar */}
       <div className="bg-[#0b2136] border-t border-slate-800/80 px-4">
         <div className="gov-container flex items-center justify-between">
-          <nav className="flex space-x-1 py-1">
+          <div className="flex items-center space-x-2">
             <button
-              onClick={() => onPortalChange('user')}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-t-lg text-xs font-bold transition-all ${
-                activePortal === 'user'
-                  ? 'bg-white text-slate-900 shadow-sm border-t-2 border-amber-500'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-              }`}
+              onClick={onSignOut}
+              className="flex items-center space-x-1 text-slate-400 hover:text-white px-2 py-1.5 rounded text-xs transition-colors"
             >
-              <ScanLine className="w-4 h-4 text-blue-700" />
-              <span>{t.inspectorPortalTab} (Screening & OCR)</span>
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span>{lang === 'hi' ? 'गेटवे' : 'Gateway'}</span>
             </button>
+            <span className="text-slate-600">|</span>
 
-            {currentUser?.role === 'admin' && (
+            <nav className="flex space-x-1 py-1">
               <button
-                onClick={() => onPortalChange('admin')}
+                onClick={() => onPortalChange('user')}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-t-lg text-xs font-bold transition-all ${
+                  activePortal === 'user'
+                    ? 'bg-white text-slate-900 shadow-sm border-t-2 border-emerald-500'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                }`}
+              >
+                <ScanLine className="w-4 h-4 text-emerald-600" />
+                <span>{t.inspectorPortalTab} (Screening & OCR)</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  if (currentUser?.role !== 'admin') {
+                    onRoleSwitch('admin');
+                  }
+                  onPortalChange('admin');
+                }}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-t-lg text-xs font-bold transition-all ${
                   activePortal === 'admin'
                     ? 'bg-white text-slate-900 shadow-sm border-t-2 border-amber-500'
                     : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
                 }`}
               >
-                <LayoutDashboard className="w-4 h-4 text-indigo-600" />
+                <LayoutDashboard className="w-4 h-4 text-amber-600" />
                 <span>{t.adminPortalTab} (Executive Command)</span>
                 <span className="text-[9px] bg-amber-400 text-slate-950 px-1.5 py-0.2 rounded font-black">
                   ADMIN
                 </span>
               </button>
-            )}
-          </nav>
+            </nav>
+          </div>
 
           <div className="hidden sm:flex items-center text-[11px] text-slate-400 space-x-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>NLMES Secure Node Active</span>
+            <span>
+              {activePortal === 'admin' 
+                ? 'Admin Control Center • Full Clearance' 
+                : 'Inspector Terminal • Ready for Scanning'}
+            </span>
           </div>
         </div>
       </div>

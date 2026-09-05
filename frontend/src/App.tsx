@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { GovHeader } from './components/GovHeader';
+import { GatewayLanding } from './components/GatewayLanding';
 import { MetricsBar } from './components/MetricsBar';
 import { UploadZone } from './components/UploadZone';
 import { ScanCanvas } from './components/ScanCanvas';
@@ -27,6 +28,7 @@ import {
   uploadPackagingImage,
   fetchScans,
   getMe,
+  loginUser,
   switchDemoRole
 } from './services/api';
 import { type Language, translations } from './i18n/translations';
@@ -49,7 +51,10 @@ export function App() {
   const [lang, setLang] = useState<Language>('en');
   const t = translations[lang];
 
-  // Auth & Portal State
+  // Application View Mode: 'gateway' (Landing Hub with Admin Sign In & Inspector Sign In) or 'portal' (Active Workspace)
+  const [viewMode, setViewMode] = useState<'gateway' | 'portal'>('gateway');
+
+  // Active Portal: 'user' (Inspector Screening & OCR) or 'admin' (Admin Control Center)
   const [activePortal, setActivePortal] = useState<'user' | 'admin'>('user');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [adminActiveTab, setAdminActiveTab] = useState<string>('dashboard');
@@ -70,25 +75,82 @@ export function App() {
 
   const loadInitialData = async () => {
     try {
-      const user = await getMe();
-      setCurrentUser(user);
+      const user = await getMe().catch(() => null);
+      if (user) {
+        setCurrentUser(user);
+      }
 
       const [m, skus, allScans] = await Promise.all([
-        fetchDashboardMetrics(),
-        fetchDemoSkus(),
-        fetchScans()
+        fetchDashboardMetrics().catch(() => null),
+        fetchDemoSkus().catch(() => []),
+        fetchScans().catch(() => [])
       ]);
-      setMetrics(m);
-      setDemoSkus(skus);
-      setScans(allScans);
+      if (m) setMetrics(m);
+      if (skus) setDemoSkus(skus);
+      if (allScans) setScans(allScans);
 
-      if (allScans.length > 0) {
+      if (allScans && allScans.length > 0) {
         setSelectedScan(allScans[0]);
-      } else if (skus.length > 0) {
+      } else if (skus && skus.length > 0) {
         loadDemoSku(skus[0].id);
       }
     } catch (err) {
       console.error('Error loading initial data:', err);
+    }
+  };
+
+  // Select Portal from Gateway (Quick Demo One-Click Sign In)
+  const handleSelectPortal = async (portal: 'user' | 'admin', role = 'inspector') => {
+    setIsLoading(true);
+    try {
+      const targetRole = portal === 'admin' ? (role === 'reviewer' ? 'reviewer' : 'admin') : (role === 'operator' ? 'operator' : 'inspector');
+      const res = await switchDemoRole(targetRole);
+      setCurrentUser(res.user);
+      setActivePortal(portal);
+      setViewMode('portal');
+
+      // Refresh data
+      const [m, allScans] = await Promise.all([
+        fetchDashboardMetrics().catch(() => null),
+        fetchScans().catch(() => [])
+      ]);
+      if (m) setMetrics(m);
+      if (allScans) {
+        setScans(allScans);
+        if (allScans.length > 0 && !selectedScan) {
+          setSelectedScan(allScans[0]);
+        }
+      }
+    } catch (err) {
+      alert('Sign-In Error: ' + err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Manual Password Sign In from Gateway
+  const handleLoginSubmit = async (email: string, pass: string, portal: 'user' | 'admin') => {
+    setIsLoading(true);
+    try {
+      const res = await loginUser(email, pass);
+      setCurrentUser(res.user);
+      setActivePortal(portal);
+      setViewMode('portal');
+
+      // Refresh data
+      const [m, allScans] = await Promise.all([
+        fetchDashboardMetrics().catch(() => null),
+        fetchScans().catch(() => [])
+      ]);
+      if (m) setMetrics(m);
+      if (allScans) {
+        setScans(allScans);
+        if (allScans.length > 0) {
+          setSelectedScan(allScans[0]);
+        }
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -97,7 +159,7 @@ export function App() {
       setIsLoading(true);
       const res = await switchDemoRole(newRole);
       setCurrentUser(res.user);
-      if (newRole !== 'admin' && activePortal === 'admin') {
+      if (newRole !== 'admin' && newRole !== 'reviewer' && activePortal === 'admin') {
         setActivePortal('user');
       }
       const allScans = await fetchScans();
@@ -107,6 +169,10 @@ export function App() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSignOut = () => {
+    setViewMode('gateway');
   };
 
   const loadDemoSku = async (demoId: string) => {
@@ -139,6 +205,19 @@ export function App() {
     }
   };
 
+  // Render Gateway Landing View if not entered into a portal
+  if (viewMode === 'gateway') {
+    return (
+      <GatewayLanding
+        onSelectPortal={handleSelectPortal}
+        onLoginSubmit={handleLoginSubmit}
+        lang={lang}
+        onLanguageChange={setLang}
+        isLoading={isLoading}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-[#F3F6F9] font-sans antialiased text-slate-800">
       {/* Official Government Top Header */}
@@ -147,6 +226,7 @@ export function App() {
         onPortalChange={setActivePortal}
         currentUser={currentUser}
         onRoleSwitch={handleRoleSwitch}
+        onSignOut={handleSignOut}
         lang={lang}
         onLanguageChange={setLang}
       />
@@ -157,7 +237,7 @@ export function App() {
         {/* PORTAL 1: ADMIN CONTROL CENTER */}
         {/* ========================================================================= */}
         {activePortal === 'admin' && (
-          currentUser?.role !== 'admin' ? (
+          currentUser?.role !== 'admin' && currentUser?.role !== 'reviewer' ? (
             <div className="bg-white p-12 rounded-xl border border-rose-300 shadow-md text-center max-w-lg mx-auto">
               <ShieldAlert className="w-12 h-12 text-rose-600 mx-auto mb-3" />
               <h3 className="text-base font-bold text-slate-900">Administrative Clearance Required</h3>
@@ -287,7 +367,7 @@ export function App() {
                     >
                       <Bell className="w-4 h-4 text-rose-400" />
                       <span>{t.navAlerts}</span>
-                      {metrics && metrics.active_alerts.length > 0 && (
+                      {metrics && metrics.active_alerts && metrics.active_alerts.length > 0 && (
                         <span className="ml-auto bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full">
                           {metrics.active_alerts.length}
                         </span>
